@@ -1,15 +1,16 @@
 CC = gcc
-CFLAGS = -Wall -g -Werror -Wextra
+CFLAGS = -g -Wall -Werror -Wextra
+OBJS = kosaraju.o adjmatrix.o
 
 all: kosaraju
 
-kosaraju: kosaraju.o
-	$(CC) $(CFLAGS) -o kosaraju kosaraju.o
+kosaraju: $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
 
-kosaraju.o: kosaraju.c
-	$(CC) $(CFLAGS) -c kosaraju.c
+*.o: *.c
+	$(CC) $(CFLAGS) -c $<
 
 clean:
-	rm -f kosaraju kosaraju.o
+	rm -f kosaraju *.o
 
 .PHONY: clean all

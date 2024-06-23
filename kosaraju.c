@@ -1,49 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Define the structure for an adjacency list node
-typedef struct AdjListNode {
-    int dest;
-    struct AdjListNode* next;
-} AdjListNode;
-
-// Define the structure for an adjacency list
-typedef struct AdjList {
-    AdjListNode* head;
-} AdjList;
-
-// Define the structure for a graph
-typedef struct Graph {
-    int V;
-    AdjList* array;
-} Graph;
-
-// Function to create a new adjacency list node
-AdjListNode* newAdjListNode(int dest) {
-    AdjListNode* newNode = (AdjListNode*)malloc(sizeof(AdjListNode));
-    newNode->dest = dest;
-    newNode->next = NULL;
-    return newNode;
-}
-
-// Function to create a graph of V vertices
-Graph* createGraph(int V) {
-    Graph* graph = (Graph*)malloc(sizeof(Graph));
-    graph->V = V;
-    graph->array = (AdjList*)malloc(V * sizeof(AdjList));
-
-    for (int i = 0; i < V; ++i)
-        graph->array[i].head = NULL;
-
-    return graph;
-}
-
-// Function to add an edge to an undirected graph
-void addEdge(Graph* graph, int src, int dest) {
-    AdjListNode* newNode = newAdjListNode(dest);
-    newNode->next = graph->array[src].head;
-    graph->array[src].head = newNode;
-}
+// #include "adjlist.h"
+#include "adjmatrix.h"
 
 // DFS function to reach the destination
 int dfs(int curr, int des, Graph* graph, int* vis) {
@@ -51,16 +10,26 @@ int dfs(int curr, int des, Graph* graph, int* vis) {
         return 1;
     }
     vis[curr] = 1;
-    AdjListNode* temp = graph->array[curr].head;
-    while (temp) {
-        int x = temp->dest;
-        if (!vis[x]) {
-            if (dfs(x, des, graph, vis)) {
+
+    // AdjListNode* temp = graph->array[curr].head;
+    // while (temp) {
+    //     int x = temp->dest;
+    //     if (!vis[x]) {
+    //         if (dfs(x, des, graph, vis)) {
+    //             return 1;
+    //         }
+    //     }
+    //     temp = temp->next;
+    // }
+
+    for (int i = 0; i < graph->V; i++) {
+        if (graph->G[curr][i] && !vis[i]) {
+            if (dfs(i, des, graph, vis)) {
                 return 1;
             }
         }
-        temp = temp->next;
     }
+
     return 0;
 }
 
@@ -104,7 +73,8 @@ int** findSCC(int n, int **a, int edges, int* sccSizes, int* numSCCs) {
 
     *numSCCs = idx;
     free(is_scc);
-    free(graph->array);
+    free(graph->G);
+    //free(graph->array);
     free(graph);
 
     return result;
@@ -136,10 +106,6 @@ int main()
 	printf("Enter the number of vertices and edges: ");
 	scanf("%d %d", &n, &m);
 	int **graph = newGraph(n, m);
-	// for (int i = 0; i < n; i++)
-	// {
-	// 	printf("Vertex %d: %d %d\n", i, graph[i][0], graph[i][1]);
-	// }
 
 	int* sccSizes = (int*)malloc(n * sizeof(int));
     int numSCCs;
