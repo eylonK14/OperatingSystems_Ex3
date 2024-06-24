@@ -1,7 +1,6 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "common.h"
 
 // Define the structure for an adjacency list node
 typedef struct AdjListNode {
@@ -22,9 +21,3 @@ typedef struct Graph {
 
 // Function to create a new adjacency list node
 AdjListNode* newAdjListNode(int);
-
-// Function to create a graph of V vertices
-Graph* createGraph(int);
-
-// Function to add an edge to an undirected graph
-void addEdge(Graph*, int, int);

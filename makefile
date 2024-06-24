@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -Wall -Werror -Wextra
-OBJS = kosaraju.o adjmatrix.o
+OBJS = kosaraju.o adjlist.o twoDimArr.o
 
 all: kosaraju
 

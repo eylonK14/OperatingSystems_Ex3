@@ -6,13 +6,7 @@ Graph *createGraph(int G)
 	graph->V = G;
 	graph->G = (int **)malloc(G * sizeof(int *));
 	for (int i = 0; i < G; i++)
-	{
-		graph->G[i] = (int *)malloc(G * sizeof(int));
-		for (int j = 0; j < G; j++)
-		{
-			graph->G[i][j] = 0;
-		}
-	}
+		graph->G[i] = (int *)calloc(G, sizeof(int));
 	return graph;
 }
 
