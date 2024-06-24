@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -g -Wall -Werror -Wextra
-OBJS = kosaraju.o adjlist.o twoDimArr.o
+CFLAGS = -pg -Wall -Werror -Wextra
+OBJS = kosaraju.o adjmatrix.o deque.o
 
 all: kosaraju
 
@@ -11,6 +11,6 @@ kosaraju: $(OBJS)
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	rm -f kosaraju *.o
+	rm -f kosaraju *.o gmon.out
 
 .PHONY: clean all

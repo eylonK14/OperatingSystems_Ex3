@@ -12,11 +12,11 @@
 #endif // DEQUE
 
 
-int **newGraph(int vertices, int edges)
+int **newGraph(int edges)
 {
     int i;
-    int **graph = malloc(vertices * sizeof(int *));
-    for (i = 0; i < vertices; i++)
+    int **graph = malloc(edges * sizeof(int *));
+    for (i = 0; i < edges; i++)
     {
         graph[i] = (int *)calloc(2, sizeof(int));
     }
@@ -37,7 +37,7 @@ int main()
     int n, m;
     printf("Enter the number of vertices and edges: ");
     scanf("%d %d", &n, &m);
-    int **graph = newGraph(n, m);
+    int **graph = newGraph(m);
 
     Graph *newGraph = createGraph(n);
     for (int i = 0; i < m; i++)

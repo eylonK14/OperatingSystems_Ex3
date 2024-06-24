@@ -1,7 +1,7 @@
-#define ADJ_LIST
+// #define ADJ_LIST
 
-// #define ADJ_MATRIX
+#define ADJ_MATRIX
 
-#define TWO_DIM_ARR
+// #define TWO_DIM_ARR
 
-// #define DEQUE
+#define DEQUE
