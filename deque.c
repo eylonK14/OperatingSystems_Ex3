@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "deque.h"
 
 // Function to create a stack of given capacity

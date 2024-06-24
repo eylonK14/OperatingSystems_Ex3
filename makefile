@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -pg -Wall -Werror -Wextra
+CFLAGS = -pg -g -Wall -Werror -Wextra
 OBJS = kosaraju.o adjmatrix.o deque.o
 
 all: kosaraju

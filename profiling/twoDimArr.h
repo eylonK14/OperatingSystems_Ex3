@@ -1,8 +1,5 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "prof.h"
 
 #ifdef ADJ_LIST
