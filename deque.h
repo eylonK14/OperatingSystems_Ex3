@@ -33,4 +33,4 @@ Graph *transposeGraph(Graph *);
 
 void dfsUtil(Graph *, int v, int[], int *, int *);
 
-void kosarajuSCC(Graph *);
+char* kosarajuSCC(Graph *);

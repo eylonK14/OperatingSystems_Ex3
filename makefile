@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -pg -g -Wall -Werror -Wextra
-OBJS = kosaraju.o adjmatrix.o deque.o
+OBJS = kosaraju.o adjmatrix.o deque.o pollserver.o
 
 all: kosaraju
 

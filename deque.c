@@ -132,7 +132,7 @@ void dfsUtil(Graph *graph, int v, int visited[], int *component, int *index)
 // }
 
 // Function to find and print all strongly connected components
-void kosarajuSCC(Graph *graph)
+char* kosarajuSCC(Graph *graph)
 {
 	Stack *stack = createStack(graph->V);
 	int *visited = (int *)calloc(graph->V, sizeof(int));
@@ -148,6 +148,9 @@ void kosarajuSCC(Graph *graph)
 	for (int i = 0; i < graph->V; i++)
 		visited[i] = 0;
 
+	char* result = (char*)malloc(sizeof(char) * graph->V * 100);
+	strcpy(result, "");
+
 	while (!isEmpty(stack))
 	{
 		int v = pop(stack);
@@ -158,10 +161,18 @@ void kosarajuSCC(Graph *graph)
 			int index = 0;
 			dfsUtil(transposed, v, visited, component, &index);
 
-			printf("Strongly Connected Component: ");
+			char temp[100];
+			sprintf(temp, "Strongly Connected Component: ");
+			strcat(result, temp);
+
 			for (int i = 0; i < index; i++)
-				printf("%d ", component[i] + 1);
-			printf("\n");
+			{
+				sprintf(temp, "%d ", component[i] + 1);
+				strcat(result, temp);
+			}
+
+			sprintf(temp, "\n");
+			strcat(result, temp);
 
 			free(component);
 		}
@@ -185,4 +196,6 @@ void kosarajuSCC(Graph *graph)
 #endif // ADJ_LIST
 	free(graph);
 	free(transposed);
+
+	return result;
 }
