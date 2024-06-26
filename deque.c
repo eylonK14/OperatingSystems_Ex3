@@ -117,20 +117,6 @@ void dfsUtil(Graph *graph, int v, int visited[], int *component, int *index)
 #endif // ADJ_LIST
 }
 
-// void DFS(Graph *graph, int v, int visited[], int *component, int *index, Stack *stack)
-// {
-// 	visited[v] = 1;
-// 	component[(*index)++] = v;
-// 	for (int i = 0; i < graph->V; i++)
-// 	{
-// 		if (graph->G[v][i] && !visited[i])
-// 		{
-// 			DFS(graph, i, visited, component, index, stack);
-// 		}
-// 	}
-// 	push(stack, v);
-// }
-
 // Function to find and print all strongly connected components
 char* kosarajuSCC(Graph *graph)
 {
@@ -182,19 +168,16 @@ char* kosarajuSCC(Graph *graph)
 	free(stack->array);
 	free(stack);
 #ifdef ADJ_MATRIX
-	for (int i = 0; i < graph->V; i++)
-		free(graph->G[i]);
-	free(graph->G);
 	for (int i = 0; i < transposed->V; i++)
 		free(transposed->G[i]);
 	free(transposed->G);
 #endif // ADJ_MATRIX
 
 #ifdef ADJ_LIST
-	free(graph->array);
+	// free(graph->array);
 	free(transposed->array);
 #endif // ADJ_LIST
-	free(graph);
+	// free(graph);
 	free(transposed);
 
 	return result;

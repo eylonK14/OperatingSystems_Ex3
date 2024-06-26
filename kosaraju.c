@@ -11,46 +11,6 @@
 #include "pollserver.h"
 #include "kosaraju.h"
 
-int **newGraph(int edges, int fd_count, struct pollfd *pfds, int listener, int sender_fd)
-{
-    int i;
-    int **graph = malloc(edges * sizeof(int *));
-    for (i = 0; i < edges; i++)
-    {
-        graph[i] = (int *)calloc(2, sizeof(int));
-    }
-    char buf[256] = {0}; // Buffer for client data
-    for (i = 0; i < edges; i++)
-    {
-        int a, b;
-        // printf("Enter the edge #%d: ", i + 1);
-        send_to_everyone(fd_count, pfds, listener, sender_fd, "Enter the edge #", 15);
-        // scanf("%d %d", &a, &b);
-        int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
-
-        int sender_fd = pfds[i].fd;
-
-        if (nbytes <= 0)
-        {
-            // Got error or connection closed by client
-            if (nbytes == 0)
-            {
-                // Connection closed
-                printf("pollserver: socket %d hung up\n", sender_fd);
-            }
-            else
-            {
-                perror("recv");
-            }
-        }
-        a = buf[0] - '0';
-        b = buf[2] - '0';
-        graph[i][0] = a - 1;
-        graph[i][1] = b - 1;
-    }
-    return graph;
-}
-
 int words(char sentence[])
 {
     int count = 1;
@@ -60,10 +20,13 @@ int words(char sentence[])
     return count;
 }
 
-char *parse(char *input, Graph **graph, int fd_count, struct pollfd *pfds, int listener, int sender_fd)
+char *parse(char *input, Graph **graph, int *edge_counter, int *n, int *m)
 {
-    char *result = NULL;
-    // strcpy(result, "");
+    char *result = (char *)malloc(sizeof(char) * 256);
+    input[strlen(input) - 1] = '\0';
+    int input_length = strlen(input);
+    char *input_copy = (char *)malloc(sizeof(char) * input_length);
+    strcpy(input_copy, input);
     int word_count = words(input);
     if (word_count > 1)
     {
@@ -77,16 +40,21 @@ char *parse(char *input, Graph **graph, int fd_count, struct pollfd *pfds, int l
             token = strtok(NULL, " ");
         }
         command[word_count] = NULL;
-        if (!strcmp(command[0], "newgraph"))
+        if (input_length == 3 || !strcmp(command[0], "newgraph"))
         {
-            int n = command[1][0] - '0', m = command[1][2] - '0';
-            int **myGraph = newGraph(m, fd_count, pfds, listener, sender_fd);
-
-            *graph = createGraph(n);
-            for (int i = 0; i < m; i++)
+            if (input_length != 3)
             {
-                addEdge(*graph, myGraph[i][0], myGraph[i][1]);
+                *n = command[1][0] - '0', *m = command[1][2] - '0';
+                *graph = createGraph((int) *n);
             }
+
+            else if (*edge_counter < *m)
+            {
+                addEdge(*graph, (input_copy[0] - '0') - 1, (input_copy[2] - '0') - 1);
+                (*edge_counter)++;
+            }
+
+            result = "newgraph\n";
         }
         else if (!strcmp(command[0], "newedge"))
         {
@@ -114,6 +82,7 @@ int main()
     printf("welcome to our graph factory what would you like to do?\n");
     printf("possible options are:\n\tnewgraph i,j\n\tkosaraju\n\tnewedge i,j\n\tremoveedge i,j\n\texit\n");
     Graph *myGraph = NULL;
+    int edge_counter = 0, n = 0, m = 0;
 
     int listener; // Listening socket descriptor
 
@@ -192,6 +161,10 @@ int main()
                 }
                 else
                 {
+                    for (int i = 0; i < 256; i++)
+                    {
+                        buf[i] = 0;
+                    }
                     // If not the listener, we're just a regular client
                     int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
 
@@ -217,9 +190,9 @@ int main()
                     else
                     {
                         // We got some good data from a client
-                        result = parse(buf, &myGraph, fd_count, pfds, listener, sender_fd);
-
-                        send_to_everyone(fd_count, pfds, listener, sender_fd, result, nbytes);
+                        result = parse(buf, &myGraph, &edge_counter, &n, &m);
+                        
+                        send_to_everyone(fd_count, pfds, listener, sender_fd, result, strlen(result));
                     }
                 } // END handle data from client
             } // END got ready-to-read from poll()
