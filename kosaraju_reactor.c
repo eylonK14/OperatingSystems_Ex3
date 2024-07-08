@@ -33,8 +33,9 @@ void parseCommand(char *input, char **command, int word_count)
     command[word_count] = NULL;
 }
 
-char *parse(char *input, Graph **graph, int *edge_counter, int *n, int *m)
+char *parse(char *input, void **myGraph, int *edge_counter, int *n, int *m)
 {
+    Graph **graph = (Graph **)myGraph;
     char *result = (char *)malloc(sizeof(char) * 256);
     input[strlen(input) - 1] = '\0';
     int input_length = strlen(input);
@@ -72,7 +73,7 @@ char *parse(char *input, Graph **graph, int *edge_counter, int *n, int *m)
     return result;
 }
 
-void send_to_everyone(int fd_count, struct pollfd *pfds, int listener, int sender_fd, char *result, int nbytes)
+void send_to_everyone(int fd_count, struct pollfd *pfds, int listener, char *result, int nbytes)
 {
     for (int j = 0; j < fd_count; j++)
     {
@@ -80,7 +81,7 @@ void send_to_everyone(int fd_count, struct pollfd *pfds, int listener, int sende
         int dest_fd = pfds[j].fd;
 
         // Except the listener and ourselves
-        if (dest_fd != listener && dest_fd != sender_fd && send(dest_fd, result, nbytes, 0) == -1)
+        if (dest_fd != listener && send(dest_fd, result, nbytes, 0) == -1)
             perror("send");
     }
 }
@@ -106,7 +107,7 @@ int main()
     for (;;)
     {
         struct pollfd *pfds = malloc(sizeof *pfds * myReactor->capacity);
-        const size_t noOfHandles = buildPollArray(pfds);
+        const size_t noOfHandles = buildPollArray(myReactor, pfds);
         int poll_count = poll(pfds, noOfHandles, -1);
 
         if (poll_count == -1)
@@ -121,12 +122,12 @@ int main()
             // Check if someone's ready to read
             if (pfds[i].revents & POLLIN)
             { // We got one!!
-                if (pfds[i].fd == listener)
+                if (pfds[i].fd == myReactor->handlers[0].pollfd.fd)
                 {
                     // If listener is ready to read, handle new connection
 
                     addrlen = sizeof remoteaddr;
-                    newfd = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
+                    newfd = accept(myReactor->handlers[0].pollfd.fd, (struct sockaddr *)&remoteaddr, &addrlen);
 
                     printf("got connection\n");
 
@@ -134,7 +135,8 @@ int main()
                         perror("accept");
                     else
                     {
-                        add_to_pfds(&pfds, newfd, &fd_count, &fd_size);
+                        // add_to_pfds(&pfds, newfd, &fd_count, &fd_size);
+                        addFdToReactor(myReactor, newfd, parse);
 
                         printf("pollserver: new connection from %s on socket %d\n",
                                inet_ntop(remoteaddr.ss_family,
@@ -164,14 +166,16 @@ int main()
 
                         close(pfds[i].fd); // Bye!
 
-                        del_from_pfds(pfds, i, &fd_count);
+                        // del_from_pfds(pfds, i, &fd_count);
+                        removeFdFromReactor(myReactor, sender_fd);
                     }
                     else
                     {
                         // We got some good data from a client
-                        result = parse(buf, &myGraph, &edge_counter, &n, &m);
+                        // result = parse(buf, &myGraph, &edge_counter, &n, &m);
+                        result = myReactor->handlers[i].handleEvent(buf, (void**) &myGraph, &edge_counter, &n, &m);
 
-                        send_to_everyone(fd_count, pfds, listener, sender_fd, result, strlen(result));
+                        send_to_everyone(myReactor->capacity, pfds, myReactor->handlers[0].pollfd.fd, result, strlen(result));
                     }
                 } // END handle data from client
             } // END got ready-to-read from poll()

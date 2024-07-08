@@ -2,7 +2,7 @@
 
 void *startReactor()
 {
-	reactor *myReactor = malloc(sizeof(myReactor));
+	reactor *myReactor = malloc(sizeof(reactor)* 4);
 	myReactor->handlers = malloc(sizeof(eventHandler) * MAX_NO_OF_HANDLES);
 
 	// Set up and get a listening socket
@@ -29,8 +29,9 @@ int addFdToReactor(void *Reactor, int fd, reactorFunc func)
 	if (myReactor->size == myReactor->capacity)
 	{
 		myReactor->capacity *= 2;
-		realloc(myReactor->handlers, sizeof(eventHandler) * myReactor->capacity);
+		myReactor->handlers = realloc(myReactor->handlers, sizeof(eventHandler) * myReactor->capacity);
 	}
+	myReactor->handlers[myReactor->size].isUsed = 1;
 	myReactor->handlers[myReactor->size].pollfd.fd = fd;
 	myReactor->handlers[myReactor->size].pollfd.events = POLLIN;
 	myReactor->handlers[myReactor->size].handleEvent = func;
@@ -42,7 +43,7 @@ int addFdToReactor(void *Reactor, int fd, reactorFunc func)
 int removeFdFromReactor(void *Reactor, int fd)
 {
 	reactor *myReactor = (reactor *)Reactor;
-	int i;
+	size_t i;
 	for (i = 0; i < myReactor->size; i++)
 	{
 		if (myReactor->handlers[i].pollfd.fd == fd)
@@ -56,7 +57,7 @@ int removeFdFromReactor(void *Reactor, int fd)
 		return -1;
 	}
 
-	for (int j = i; j < myReactor->size - 1; j++)
+	for (size_t j = i; j < myReactor->size - 1; j++)
 	{
 		myReactor->handlers[j] = myReactor->handlers[j + 1];
 	}
@@ -72,4 +73,20 @@ int stopReactor(void *Reactor)
 	free(myReactor->handlers);
 	free(myReactor);
 	return 0;
+}
+
+size_t buildPollArray(void *Reactor, struct pollfd *pollArray)
+{
+	reactor *myReactor = (reactor *)Reactor;
+	size_t i = 0;
+    size_t noOfCopiedHandles = 0;
+	for (i = 0; i < myReactor->size; i++)
+	{
+		if (myReactor->handlers[i].isUsed)
+		{
+			pollArray[noOfCopiedHandles] = myReactor->handlers[i].pollfd;
+			noOfCopiedHandles++;
+		}
+	}
+	return noOfCopiedHandles;
 }

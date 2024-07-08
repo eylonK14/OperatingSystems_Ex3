@@ -7,7 +7,7 @@
 
 #define MAX_NO_OF_HANDLES 32
 
-typedef void *(*reactorFunc)(int fd);
+typedef char *(*reactorFunc)(char *input, void **graph, int *edge_counter, int *n, int *m);
 typedef struct _eventHandler
 {
 	struct pollfd pollfd;
@@ -34,4 +34,4 @@ int removeFdFromReactor(void *reactor, int fd);
 // stops reactor
 int stopReactor(void *reactor);
 
-int buildPollArray(struct pollfd *pollArray);
+size_t buildPollArray(void *reactor, struct pollfd *pollArray);
