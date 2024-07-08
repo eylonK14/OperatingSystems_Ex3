@@ -3,21 +3,24 @@
 #include <poll.h>
 #include <stdio.h>
 
-typedef void* (*reactorFunc)(int fd);
-typedef struct
-{
-	struct pollfd fd;
-	reactorFunc handleEvent;
-} eventHandler;
+#include "pollserver.h"
 
 #define MAX_NO_OF_HANDLES 32
 
-typedef struct reactor
+typedef void *(*reactorFunc)(int fd);
+typedef struct _eventHandler
+{
+	struct pollfd pollfd;
+	reactorFunc handleEvent;
+	int isUsed;
+} eventHandler;
+
+typedef struct _reactor
 {
 	size_t size;
-	eventHandler handlers[MAX_NO_OF_HANDLES];
-};
-
+	size_t capacity;
+	eventHandler *handlers;
+} reactor;
 
 // starts new reactor and returns pointer to it
 void *startReactor();
@@ -30,3 +33,5 @@ int removeFdFromReactor(void *reactor, int fd);
 
 // stops reactor
 int stopReactor(void *reactor);
+
+int buildPollArray(struct pollfd *pollArray);
