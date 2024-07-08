@@ -10,6 +10,8 @@
 
 #include "pollserver.h"
 
+#include <pthread.h>
+
 int words(char sentence[])
 {
     int count = 1;
@@ -84,9 +86,40 @@ void send_to_everyone(int fd_count, struct pollfd *pfds, int listener, int sende
     }
 }
 
+void communicate_wih_client(int *fd_count, char *result, int listener, char buf[256], struct pollfd *pfds, int i, Graph **myGraph, int *edge_counter, int *n, int *m)
+{
+    for (int i = 0; i < 256; i++)
+        buf[i] = 0;
+    // If not the listener, we're just a regular client
+    int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
+
+    int sender_fd = pfds[i].fd;
+
+    if (nbytes <= 0)
+    {
+        // Got error or connection closed by client
+        if (nbytes == 0) // Connection closed
+            printf("pollserver: socket %d hung up\n", sender_fd);
+        else
+            perror("recv");
+
+        close(pfds[i].fd); // Bye!
+
+        del_from_pfds(pfds, i, &fd_count);
+    }
+    else
+    {
+        // We got some good data from a client
+        result = parse(buf, myGraph, edge_counter, n, m);
+
+        send_to_everyone(fd_count, pfds, listener, sender_fd, result, strlen(result));
+    }
+}
+
 int main()
 {
     char *result = NULL;
+    pthread_t tid;
     printf("welcome to our graph factory what would you like to do?\n");
     printf("possible options are:\n\tnewgraph i,j\n\tkosaraju\n\tnewedge i,j\n\tremoveedge i,j\n\texit\n");
     Graph *myGraph = NULL;
@@ -147,7 +180,7 @@ int main()
                     addrlen = sizeof remoteaddr;
                     newfd = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
 
-                    printf("got connection\n");
+                    // pthread_create(&tid, NULL, function, function_args);
 
                     if (newfd == -1)
                         perror("accept");
@@ -164,34 +197,7 @@ int main()
                 }
                 else
                 {
-                    for (int i = 0; i < 256; i++)
-                        buf[i] = 0;
-                    // If not the listener, we're just a regular client
-                    int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
-
-                    printf("got message\n");
-
-                    int sender_fd = pfds[i].fd;
-
-                    if (nbytes <= 0)
-                    {
-                        // Got error or connection closed by client
-                        if (nbytes == 0) // Connection closed
-                            printf("pollserver: socket %d hung up\n", sender_fd);
-                        else
-                            perror("recv");
-
-                        close(pfds[i].fd); // Bye!
-
-                        del_from_pfds(pfds, i, &fd_count);
-                    }
-                    else
-                    {
-                        // We got some good data from a client
-                        result = parse(buf, &myGraph, &edge_counter, &n, &m);
-
-                        send_to_everyone(fd_count, pfds, listener, sender_fd, result, strlen(result));
-                    }
+                    communicate_wih_client(&fd_count, result, listener, buf, pfds, i, &myGraph, &edge_counter, &n, &m);
                 } // END handle data from client
             } // END got ready-to-read from poll()
         } // END looping through file descriptors
