@@ -9,8 +9,7 @@
 #endif // DEQUE
 
 #include "pollserver.h"
-
-#include <pthread.h>
+#include "reactor.h"
 
 int words(char sentence[])
 {
@@ -34,8 +33,9 @@ void parseCommand(char *input, char **command, int word_count)
     command[word_count] = NULL;
 }
 
-char *parse(char *input, Graph **graph, int *edge_counter, int *n, int *m)
+char *parse(char *input, void **myGraph, int *edge_counter, int *n, int *m)
 {
+    Graph **graph = (Graph **)myGraph;
     char *result = (char *)malloc(sizeof(char) * 256);
     input[strlen(input) - 1] = '\0';
     int input_length = strlen(input);
@@ -73,93 +73,45 @@ char *parse(char *input, Graph **graph, int *edge_counter, int *n, int *m)
     return result;
 }
 
-void send_to_everyone(int fd_count, struct pollfd *pfds, int listener, int sender_fd, char *result, int nbytes)
+void send_to_everyone(size_t fd_count, struct pollfd *pfds, char *result, int nbytes)
 {
-    for (int j = 0; j < fd_count; j++)
+    for (size_t j = 1; j < fd_count; j++)
     {
         // Send to everyone!
         int dest_fd = pfds[j].fd;
 
         // Except the listener and ourselves
-        if (dest_fd != listener && dest_fd != sender_fd && send(dest_fd, result, nbytes, 0) == -1)
+        if (send(dest_fd, result, nbytes, 0) == -1)
             perror("send");
-    }
-}
-
-void communicate_wih_client(int *fd_count, char *result, int listener, char buf[256], struct pollfd *pfds, int i, Graph **myGraph, int *edge_counter, int *n, int *m)
-{
-    for (int i = 0; i < 256; i++)
-        buf[i] = 0;
-    // If not the listener, we're just a regular client
-    int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
-
-    int sender_fd = pfds[i].fd;
-
-    if (nbytes <= 0)
-    {
-        // Got error or connection closed by client
-        if (nbytes == 0) // Connection closed
-            printf("pollserver: socket %d hung up\n", sender_fd);
-        else
-            perror("recv");
-
-        close(pfds[i].fd); // Bye!
-
-        del_from_pfds(pfds, i, &fd_count);
-    }
-    else
-    {
-        // We got some good data from a client
-        result = parse(buf, myGraph, edge_counter, n, m);
-
-        send_to_everyone(fd_count, pfds, listener, sender_fd, result, strlen(result));
     }
 }
 
 int main()
 {
     char *result = NULL;
-    pthread_t tid;
-    printf("welcome to our graph factory what would you like to do?\n");
-    printf("possible options are:\n\tnewgraph i,j\n\tkosaraju\n\tnewedge i,j\n\tremoveedge i,j\n\texit\n");
+    int edge_counter = 0, n = 0, m = 0, newfd = 0;
     Graph *myGraph = NULL;
-    int edge_counter = 0, n = 0, m = 0;
 
-    int listener; // Listening socket descriptor
-
-    int newfd;                          // Newly accept()ed socket descriptor
     struct sockaddr_storage remoteaddr; // Client address
     socklen_t addrlen;
 
     char buf[256] = {0}; // Buffer for client data
-
     char remoteIP[INET6_ADDRSTRLEN];
 
-    // Start off with room for 5 connections
-    // (We'll realloc as necessary)
-    int fd_count = 0;
-    int fd_size = 5;
-    struct pollfd *pfds = malloc(sizeof *pfds * fd_size);
+    reactor *myReactor = startReactor();
 
-    // Set up and get a listening socket
-    listener = get_listener_socket();
-
-    if (listener == -1)
-    {
-        fprintf(stderr, "error getting listening socket\n");
-        exit(1);
-    }
-
-    // Add the listener to set
-    pfds[0].fd = listener;
-    pfds[0].events = POLLIN; // Report ready to read on incoming connection
-
-    fd_count = 1; // For the listener
+    printf("Welcome to our graph factory! What would you like to do?\n");
+    printf("Options are:\n\tnewgraph i,j\n\tkosaraju\n\tnewedge i,j\n\tremoveedge i,j\n\texit\n");
 
     // Main loop
-    for (;;)
+    // for (;;)
+    while (1)
     {
-        int poll_count = poll(pfds, fd_count, -1);
+
+        struct pollfd *pfds = malloc(sizeof *pfds * myReactor->capacity);
+        const size_t noOfHandles = buildPollArray(myReactor, pfds);
+
+        int poll_count = poll(pfds, noOfHandles, -1);
 
         if (poll_count == -1)
         {
@@ -168,36 +120,57 @@ int main()
         }
 
         // Run through the existing connections looking for data to read
-        for (int i = 0; i < fd_count; i++)
+        for (size_t i = 0; i < noOfHandles; i++)
         {
             // Check if someone's ready to read
             if (pfds[i].revents & POLLIN)
             { // We got one!!
-                if (pfds[i].fd == listener)
+                if (pfds[i].fd == myReactor->handlers[0].pollfd.fd)
                 {
                     // If listener is ready to read, handle new connection
 
                     addrlen = sizeof remoteaddr;
-                    newfd = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
-
-                    // pthread_create(&tid, NULL, function, function_args);
+                    newfd = accept(myReactor->handlers[0].pollfd.fd, (struct sockaddr *)&remoteaddr, &addrlen);
 
                     if (newfd == -1)
                         perror("accept");
                     else
                     {
-                        add_to_pfds(&pfds, newfd, &fd_count, &fd_size);
+                        // add_to_pfds(&pfds, newfd, &fd_count, &fd_size);
+                        addFdToReactor(myReactor, newfd, parse);
 
-                        printf("pollserver: new connection from %s on socket %d\n",
-                               inet_ntop(remoteaddr.ss_family,
-                                         get_in_addr((struct sockaddr *)&remoteaddr),
-                                         remoteIP, INET6_ADDRSTRLEN),
-                               newfd);
+                        printf("pollserver: new connection from %s on socket %d\n", inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN), newfd);
                     }
                 }
                 else
                 {
-                    communicate_wih_client(&fd_count, result, listener, buf, pfds, i, &myGraph, &edge_counter, &n, &m);
+                    for (int i = 0; i < 256; i++)
+                        buf[i] = 0;
+                    // If not the listener, we're just a regular client
+                    int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
+
+                    int sender_fd = pfds[i].fd;
+
+                    if (nbytes <= 0)
+                    {
+                        // Got error or connection closed by client
+                        if (nbytes == 0) // Connection closed
+                            printf("pollserver: socket %d hung up\n", sender_fd);
+                        else
+                            perror("recv");
+
+                        close(pfds[i].fd); // Bye!
+
+                        // del_from_pfds(pfds, i, &fd_count);
+                        removeFdFromReactor(myReactor, sender_fd);
+                    }
+                    else
+                    {
+                        // We got some good data from a client
+                        // result = parse(buf, &myGraph, &edge_counter, &n, &m);
+                        result = myReactor->handlers[i].handleEvent(buf, (void **)&myGraph, &edge_counter, &n, &m);
+                        send_to_everyone(myReactor->size, pfds, result, strlen(result));
+                    }
                 } // END handle data from client
             } // END got ready-to-read from poll()
         } // END looping through file descriptors

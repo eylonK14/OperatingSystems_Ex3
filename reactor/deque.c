@@ -120,6 +120,7 @@ void dfsUtil(Graph *graph, int v, int visited[], int *component, int *index)
 // Function to find and print all strongly connected components
 char* kosarajuSCC(Graph *graph)
 {
+
 	Stack *stack = createStack(graph->V);
 	int *visited = (int *)calloc(graph->V, sizeof(int));
 
