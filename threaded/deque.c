@@ -183,6 +183,5 @@ char* kosarajuSCC(Graph *graph)
 
 	printf("the accckktual result is %s\n", result);
 
-
 	return result;
 }

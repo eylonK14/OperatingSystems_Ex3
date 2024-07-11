@@ -3,7 +3,7 @@
 #include "common.h"
 
 // Define the structure for a graph
-typedef struct Graph
+typedef struct _Graph
 {
     int V;
     int **G;

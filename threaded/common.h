@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Graph Graph;
+typedef struct _Graph Graph;
 
 // Function to create a graph of V vertices
-Graph* createGraph(int);
+Graph *createGraph(int);
 
 // Function to add an edge to an undirected graph
-void addEdge(Graph*, int, int);
+void addEdge(Graph *, int, int);

@@ -15,6 +15,7 @@
 #define MAX_NO_OF_THREADS 32
 
 pthread_mutex_t lock;
+Graph *myGraph = NULL;
 
 struct arg_struct
 {
@@ -23,7 +24,6 @@ struct arg_struct
     int i;
     int *fd_count;
     char *result;
-    Graph **myGraph;
     int *edge_counter;
     int *n;
     int *m;
@@ -60,10 +60,10 @@ void parseCommand(char *input, char **command, int word_count)
     command[word_count] = NULL;
 }
 
-char *parse(char *input, Graph **graph, int *edge_counter, int *n, int *m)
+char *parse(char *input, int *edge_counter, int *n, int *m)
 {
     pthread_mutex_lock(&lock);
-    printf("the graph is %p\n", graph);
+
     char *result = (char *)malloc(sizeof(char) * 256);
     if (input[strlen(input) - 1] == '\n')
         input[strlen(input) - 1] = '\0';
@@ -71,40 +71,41 @@ char *parse(char *input, Graph **graph, int *edge_counter, int *n, int *m)
     char *input_copy = (char *)malloc(sizeof(char) * input_length);
     strcpy(input_copy, input);
     int word_count = words(input);
-    printf("the input is %s\n", input);
-    printf("the input copy is %s\n", input_copy);
+
     if (word_count > 1)
     {
         char **command = (char **)malloc(sizeof(char *) * (word_count + 1));
         parseCommand(input, command, word_count);
+
         if (input_length == 3 || !strcmp(command[0], "newgraph"))
         {
             if (input_length != 3)
             {
                 *n = command[1][0] - '0', *m = command[1][2] - '0';
-                *graph = createGraph((int)*n);
+
+                myGraph = createGraph((int)*n);
             }
             else if (*edge_counter < *m)
             {
-                addEdge(*graph, input_copy[0] - '1', input_copy[2] - '1');
+
+                addEdge(myGraph, input_copy[0] - '1', input_copy[2] - '1');
                 (*edge_counter)++;
             }
 
             result = "newgraph\n";
         }
         else if (!strcmp(command[0], "newedge"))
-            addEdge(*graph, command[1][0] - '1', command[1][2] - '1');
+
+            addEdge(myGraph, command[1][0] - '1', command[1][2] - '1');
         else if (!strcmp(command[0], "removeedge"))
-            (*graph)->G[command[1][0] - '1'][command[1][2] - '1'] = 0;
+
+            myGraph->G[command[1][0] - '1'][command[1][2] - '1'] = 0;
     }
     else if (!strcmp(input, "exit"))
         exit(EXIT_SUCCESS);
     else if (!strcmp(input, "kosaraju"))
     {
-        for (int i = 0; i < 5; i++)
-            for (int j = 0; j < 5; j++)
-                printf("%d\n", (*graph)->G[i][j]);
-        result = kosarajuSCC(*graph);
+        result = kosarajuSCC(myGraph);
     }
 
     pthread_mutex_unlock(&lock);
@@ -126,14 +127,14 @@ void send_to_everyone(int fd_count, struct pollfd *pfds, char *result, int nbyte
 
 void *handle_client_thread(void *arguments)
 {
-    printf("in handle_client_thread\n");
+
     struct arg_struct *args = (struct arg_struct *)arguments;
     char *buf = args->buffer;
     struct pollfd *pfds = args->pfds;
     int i = args->i;
     int *fd_count = args->fd_count;
     char *result = args->result;
-    Graph **myGraph = args->myGraph;
+
     int *edge_counter = args->edge_counter;
     int *n = args->n;
     int *m = args->m;
@@ -141,13 +142,9 @@ void *handle_client_thread(void *arguments)
     for (int i = 0; i < 256; i++)
         buf[i] = 0;
     // If not the listener, we're just a regular client
-    int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
-
-    printf("got message\n");
+    int nbytes = recv(pfds[i].fd, buf, 256, 0);
 
     int sender_fd = pfds[i].fd;
-
-    printf("the buffer is %s\n", buf);
 
     if (nbytes <= 0)
     {
@@ -164,8 +161,7 @@ void *handle_client_thread(void *arguments)
     else
     {
         // We got some good data from a client
-        result = parse(buf, myGraph, edge_counter, n, m);
-        printf("result is %s\n", result);
+        result = parse(buf, edge_counter, n, m);
         send_to_everyone(*fd_count, pfds, result, strlen(result));
     }
     return NULL;
@@ -190,22 +186,11 @@ void *accept_client_thread(void *arguments)
     addrlen = sizeof remoteaddr;
     newfd = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
 
-    printf("got connection\n");
-    // for (int i = 0; i < fd_size; i++)
-    // {
-    //     printf("fd_no_%d is: %d\n", i, pfds[i].fd);
-    // }
-
     if (newfd == -1)
         perror("accept");
     else
     {
-        printf("newfd is %d\n", newfd);
-        printf("fd_count is %d\n", *fd_count);
-        printf("fd_size is %d\n", *fd_size);
-
         add_to_pfds(&pfds, newfd, fd_count, fd_size);
-
         printf("pollserver: new connection from %s on socket %d\n", inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN), newfd);
     }
     return NULL;
@@ -218,7 +203,6 @@ int main()
 
     printf("welcome to our graph factory what would you like to do?\n");
     printf("possible options are:\n\tnewgraph i,j\n\tkosaraju\n\tnewedge i,j\n\tremoveedge i,j\n\texit\n");
-    Graph *myGraph = NULL;
     int edge_counter = 0, n = 0, m = 0;
 
     int listener; // Listening socket descriptor
@@ -257,7 +241,7 @@ int main()
     // Main loop
     for (;;)
     {
-        printf("fd_count is %d\n", fd_count);
+
         int poll_count = poll(pfds, fd_count, -1);
 
         if (poll_count == -1)
@@ -272,8 +256,7 @@ int main()
             // Check if someone's ready to read
             if (pfds[i].revents & POLLIN)
             { // We got one!!
-                printf("got data from %d\n", pfds[i].fd);
-                printf("listener is %d\n", listener);
+
                 if (pfds[i].fd == listener)
                 {
                     struct accept_args args;
@@ -299,7 +282,7 @@ int main()
                     args.i = i;
                     args.fd_count = &fd_count;
                     args.result = result;
-                    args.myGraph = &myGraph;
+
                     args.edge_counter = &edge_counter;
                     args.n = &n;
                     args.m = &m;

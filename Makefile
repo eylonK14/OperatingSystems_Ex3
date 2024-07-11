@@ -1,14 +1,14 @@
 # Variables
 CC = gcc
-CFLAGS = -g -Wall -Wextra -Werror -lc -fprofile-arcs -ftest-coverage
+CFLAGS = -g -Wall -Wextra -Werror -lc -fprofile-arcs -ftest-coverage -lpthread
 LDFLAGS = -static
-LIBNAME = libmylib.a
+LIBNAME = thread_patterns.a
 
 # Object files for the library
-OBJ_LIB_FILES = parser.o tcpHandler.o udpHandler.o udsHandler.o
+OBJ_LIB_FILES = reactor.o proactor.o
 
 # Object files for executables
-OBJ_EXEC_FILES = ttt.o mync.o
+OBJ_EXEC_FILES = kosaraju.o kosaraju_threaded.o kosaraju_reactor.o kosaraju_proactor.o kosaraju_producer_consumer.o
 
 # Default target
 all: lib executables
