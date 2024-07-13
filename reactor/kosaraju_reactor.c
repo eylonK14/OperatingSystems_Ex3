@@ -104,8 +104,7 @@ int main()
     printf("Options are:\n\tnewgraph i,j\n\tkosaraju\n\tnewedge i,j\n\tremoveedge i,j\n\texit\n");
 
     // Main loop
-    // for (;;)
-    while (1)
+    for (;;)
     {
 
         struct pollfd *pfds = malloc(sizeof *pfds * myReactor->capacity);
@@ -175,6 +174,8 @@ int main()
             } // END got ready-to-read from poll()
         } // END looping through file descriptors
     } // END for(;;)--and you thought it would never end!
+
+    stopReactor(myReactor);
 
     return 0;
 }
