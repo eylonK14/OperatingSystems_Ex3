@@ -19,6 +19,7 @@ pthread_mutex_t lock;
 Graph *myGraph = NULL;
 pThread threads[MAX_NO_OF_THREADS];
 struct pollfd *pfds;
+int fd_count = 0;
 
 struct arg_struct
 {
@@ -117,7 +118,7 @@ char *parse(char *input, int *edge_counter, int *n, int *m)
     return result;
 }
 
-void send_to_everyone(int fd_count, struct pollfd *pfds, char *result, int nbytes)
+void send_to_everyone(struct pollfd *pfds, char *result, int nbytes)
 {
     for (int j = 1; j < fd_count; j++)
     {
@@ -170,7 +171,7 @@ void *handle_client_thread(void *arguments)
     {
         // We got some good data from a client
         result = parse(buf, edge_counter, n, m);
-        if (!strcmp(result, "exit"))
+        if (!strcmp(result, "exit\n"))
         {
             for (int j = 1; j < MAX_NO_OF_THREADS; j++)
             {
@@ -182,12 +183,11 @@ void *handle_client_thread(void *arguments)
             }
         }
 
-        // TODO: Add count_fd
+        // printf("fdcount is: %d", *fd_count);
 
-        send_to_everyone(3, pfds, result, strlen(result));
+        printf("result is: %s", result);
 
-        // if (send(pfd.fd, result, nbytes, 0) == -1)
-        //     perror("send");
+        send_to_everyone(pfds, result, strlen(result));
     }
     return NULL;
 }
@@ -250,7 +250,6 @@ int main()
 
     // Start off with room for 5 connections
     // (We'll realloc as necessary)
-    int fd_count = 0;
     int fd_size = MAX_NO_OF_THREADS;
     pfds = malloc(sizeof *pfds * fd_size);
 
