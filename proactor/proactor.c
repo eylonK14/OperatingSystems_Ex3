@@ -16,9 +16,9 @@ pthread_t startProactor(int *sockfd, proactorFunc threadFunc)
 // stops proactor by threadid
 int stopProactor(pthread_t tid)
 {
-    if (pthread_kill(tid, SIGINT) != 0)
+    if (pthread_cancel(tid) != 0)
     {
-        perror("pthread_kill");
+        perror("pthread_cancel");
         // exit(1);
     }
 

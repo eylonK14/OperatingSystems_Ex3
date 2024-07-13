@@ -26,7 +26,6 @@ struct arg_struct
     char *buffer;
     struct pollfd pfd;
     int i;
-    // int *fd_count;
     char *result;
     int *edge_counter;
     int *n;
@@ -86,12 +85,10 @@ char *parse(char *input, int *edge_counter, int *n, int *m)
             if (input_length != 3)
             {
                 *n = command[1][0] - '0', *m = command[1][2] - '0';
-
                 myGraph = createGraph((int)*n);
             }
             else if (*edge_counter < *m)
             {
-
                 addEdge(myGraph, input_copy[0] - '1', input_copy[2] - '1');
                 (*edge_counter)++;
             }
@@ -99,15 +96,13 @@ char *parse(char *input, int *edge_counter, int *n, int *m)
             result = "newgraph\n";
         }
         else if (!strcmp(command[0], "newedge"))
-
             addEdge(myGraph, command[1][0] - '1', command[1][2] - '1');
         else if (!strcmp(command[0], "removeedge"))
-
             myGraph->G[command[1][0] - '1'][command[1][2] - '1'] = 0;
     }
     else if (!strcmp(input, "exit"))
     {
-        result = "exit\n"; // TODO: Handle Exit
+        result = "exit\n";
     }
     else if (!strcmp(input, "kosaraju"))
     {
@@ -136,17 +131,11 @@ void *handle_client_thread(void *arguments)
     struct arg_struct *args = (struct arg_struct *)arguments;
     char *buf = args->buffer;
     struct pollfd pfd = args->pfd;
-    // int i = args->i;
-    // int *fd_count = args->fd_count;
     char *result = args->result;
 
     int *edge_counter = args->edge_counter;
     int *n = args->n;
     int *m = args->m;
-
-    printf("edge_counter: %d\n", *edge_counter);
-    printf("n: %d\n", *n);
-    printf("m: %d\n", *m);
 
     for (int i = 0; i < 256; i++)
         buf[i] = 0;
@@ -173,17 +162,9 @@ void *handle_client_thread(void *arguments)
         result = parse(buf, edge_counter, n, m);
         if (!strcmp(result, "exit\n"))
         {
-            for (int j = 1; j < MAX_NO_OF_THREADS; j++)
-            {
-                if (threads[j].sockfd == pfd.fd)
-                {
-                    stopProactor(threads[j].tid);
-                    break;
-                }
-            }
+            close(pfd.fd);
+            stopProactor(pthread_self());
         }
-
-        // printf("fdcount is: %d", *fd_count);
 
         printf("result is: %s", result);
 
@@ -200,26 +181,14 @@ void *handle_client_thread_wrapper(void *fd)
 
     int edge_counter = 0, n = 0, m = 0;
 
-    // char remoteIP[INET6_ADDRSTRLEN];
-
     struct pollfd pfd;
     pfd.fd = my_fd;
     pfd.events = POLLIN; // Report ready to read on incoming connection
-
-    // int fd_count = 0;
-    // int fd_size = MAX_NO_OF_THREADS;
-
-    // Add the listener to set
-    // pfds[0].fd = fd;
-    // pfds[0].events = POLLIN; // Report ready to read on incoming connection
-
-    // fd_count = 1; // For the listener
 
     struct arg_struct args;
     args.buffer = buf;
     args.pfd = pfd;
     args.i = 0;
-    // args.fd_count = &fd_count;
     args.result = NULL;
 
     args.edge_counter = &edge_counter;
@@ -236,15 +205,11 @@ void *handle_client_thread_wrapper(void *fd)
 
 int main()
 {
-    // char *result = NULL;
 
     printf("welcome to our graph factory what would you like to do?\n");
     printf("possible options are:\n\tnewgraph i,j\n\tkosaraju\n\tnewedge i,j\n\tremoveedge i,j\n\texit\n");
-    // int edge_counter = 0, n = 0, m = 0;
 
     int listener; // Listening socket descriptor
-
-    // char buf[256] = {0}; // Buffer for client data
 
     char remoteIP[INET6_ADDRSTRLEN];
 
@@ -316,42 +281,7 @@ int main()
                     p.tid = startProactor(&newfd, handle_client_thread_wrapper);
 
                     threads[i] = p;
-
-                    // struct accept_args args;
-                    // args.listener = listener;
-                    // args.pfds = &pfds;
-                    // args.remoteIP = remoteIP;
-                    // args.fd_count = &fd_count;
-                    // args.fd_size = &fd_size;
-
-                    // if (pthread_create(&threads[i], NULL, &accept_client_thread, (void *)&args) != 0)
-                    // {
-                    //     perror("pthread_create");
-                    //     exit(1);
-                    // }
-
-                    // pthread_join(threads[i], NULL);
                 }
-                // else
-                // {
-                //     struct arg_struct args;
-                //     args.buffer = buf;
-                //     args.pfds = pfds;
-                //     args.i = i;
-                //     args.fd_count = &fd_count;
-                //     args.result = result;
-
-                //     args.edge_counter = &edge_counter;
-                //     args.n = &n;
-                //     args.m = &m;
-
-                //     if (pthread_create(&threads[i], NULL, &handle_client_thread, (void *)&args) != 0)
-                //     {
-                //         perror("pthread_create");
-                //         exit(1);
-                //     }
-
-                //     pthread_join(threads[i], NULL);
 
                 // } // END handle data from client
             } // END got ready-to-read from poll()

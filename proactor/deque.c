@@ -181,7 +181,5 @@ char *kosarajuSCC(Graph *graph)
 	// free(graph);
 	free(transposed);
 
-	printf("%s", result);
-
 	return result;
 }
