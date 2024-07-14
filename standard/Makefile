@@ -2,16 +2,13 @@ CC = gcc
 CFLAGS = -pg -g -Wall -Werror -Wextra
 OBJS = kosaraju.o adjmatrix.o deque.o pollserver.o
 
-
 all: kosaraju
 
-kosaraju_reactor: $(OBJS)
+kosaraju: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 *.o: *.c
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	rm -f kosaraju *.o gmon.out
-
-.PHONY: clean all
+	rm -f kosaraju *.o gmon.out *.gcov *.gcda *.gcno

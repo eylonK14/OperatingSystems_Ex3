@@ -10,8 +10,6 @@ kosaraju_producer_consumer: $(OBJS)
 *.o: *.c
 	$(CC) $(CFLAGS) -c $<
 
-
-.PHONY: clean all
-
 clean:
-	rm -f kosaraju_producer_consumer *.o gmon.out
+	rm -f kosaraju_producer_consumer *.o gmon.out *.gcov *.gcda *.gcno
+	

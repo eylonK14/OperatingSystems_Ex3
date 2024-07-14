@@ -11,6 +11,4 @@ kosaraju_threaded: $(OBJS)
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	rm -f kosaraju_threaded *.o gmon.out
-
-.PHONY: clean all
+	rm -f kosaraju_threaded *.o gmon.out *.gcov *.gcda *.gcno

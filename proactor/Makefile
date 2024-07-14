@@ -10,8 +10,5 @@ kosaraju_proactor: $(OBJS)
 *.o: *.c
 	$(CC) $(CFLAGS) -c $<
 
-
-.PHONY: clean all
-
 clean:
-	rm -f kosaraju_proactor *.o gmon.out
+	rm -f kosaraju_proactor *.o gmon.out *.gcov *.gcda *.gcno
