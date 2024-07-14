@@ -144,8 +144,6 @@ void *handle_client_thread(void *arguments)
             perror("recv");
 
         close(pfd.fd); // Bye!
-
-        // del_from_pfds(pfds, i, fd_count);
     }
     else
     {
@@ -156,8 +154,6 @@ void *handle_client_thread(void *arguments)
             close(pfd.fd);
             stopProactor(pthread_self());
         }
-
-        printf("result is: %s", result);
 
         send_to_everyone(pfds, result, strlen(result));
     }
@@ -199,6 +195,8 @@ int main()
 
     printf("welcome to our graph factory what would you like to do?\n");
     printf("possible options are:\n\tnewgraph i,j\n\tkosaraju\n\tnewedge i,j\n\tremoveedge i,j\n\texit\n");
+
+    startProactor(NULL, monitor);
 
     int listener; // Listening socket descriptor
 

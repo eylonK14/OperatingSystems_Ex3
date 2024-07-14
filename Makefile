@@ -5,10 +5,10 @@ LDFLAGS = -static
 LIBNAME = thread_patterns.a
 
 # Object files for the library
-OBJ_LIB_FILES = reactor.o proactor.o
+OBJ_LIB_FILES = reactor/reactor.o proactor/proactor.o
 
 # Object files for executables
-OBJ_EXEC_FILES = kosaraju.o kosaraju_threaded.o kosaraju_reactor.o kosaraju_proactor.o kosaraju_producer_consumer.o
+OBJ_EXEC_FILES = standard/kosaraju.o threaded/kosaraju_threaded.o reactor/kosaraju_reactor.o proactor/kosaraju_proactor.o producer_consumer/kosaraju_producer_consumer.o
 
 # Default target
 all: lib executables
@@ -27,7 +27,6 @@ lib: $(LIBNAME)
 
 # Rule for creating executables
 executables: $(OBJ_EXEC_FILES)
-	$(CC) $(CFLAGS) -o ttt ttt.o
 	$(CC) $(CFLAGS) -o mync mync.o $(LIBNAME)
 
 # Clean up
